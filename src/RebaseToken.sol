@@ -6,12 +6,11 @@ import {Ownable} from "@openzeppelin/access/Ownable.sol";
 import {AccessControl} from "@openzeppelin/access/AccessControl.sol";
 
 contract RebaseToken is ERC20, Ownable, AccessControl {
-    
     error RebaseToken__InterestRateCanOnlyDecrease();
 
-    uint256 private constant PRECISION_FACTOR = 1e18; //this is to make sure we working with the same units
+    uint256 private constant PRECISION_FACTOR = 1e18; //this was changed because of truncation and simplicity to understand
     bytes32 public constant MINT_AND_BURN_ROLE = keccak256("MINT_AND_BURN_ROLE");
-    uint256 private s_interestRate = 5e10; // 0,000000005 are added per second for 1 token
+    uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8; // 0,000000005 are added per second for 1 token ||
     mapping(address => uint256) private s_usersInterestRate;
     mapping(address => uint256) private s_userLastUpdatedTimeStamp;
 
@@ -43,12 +42,13 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     function transfer(address _recipient, uint256 _amount) public override returns (bool) {
-        _mintAccruedInterest(msg.sender);
-        _mintAccruedInterest(_recipient);
         if (_amount == type(uint256).max) {
             //dust check
             _amount = balanceOf(msg.sender);
         }
+        _mintAccruedInterest(msg.sender);
+        _mintAccruedInterest(_recipient);
+
         //if the user hasn't deposited or received any token previously they will inherit the interest rate
         if (balanceOf(_recipient) == 0) {
             s_usersInterestRate[_recipient] = s_usersInterestRate[msg.sender];
@@ -57,13 +57,15 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     }
 
     function transferFrom(address _sender, address _recipient, uint256 _amount) public override returns (bool) {
-        _mintAccruedInterest(msg.sender);
-        _mintAccruedInterest(_recipient);
         if (_amount == type(uint256).max) {
             //dust check
-            _amount = balanceOf(msg.sender);
+            _amount = balanceOf(_sender);
         }
-        //if the user hasn't deposited or received any token previously they will inherit the interest rate
+
+        _mintAccruedInterest(_sender);
+        _mintAccruedInterest(_recipient);
+
+        //if the user hasn't deposited or received any token previously, they will inherit the interest rate (design flaw)
         if (balanceOf(_recipient) == 0) {
             s_usersInterestRate[_recipient] = s_usersInterestRate[msg.sender];
         }
@@ -131,8 +133,5 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
     function getUserInterestRate(address _user) external view returns (uint256) {
         return s_usersInterestRate[_user];
     }
-
-    // function getTotalSupply() external view returns(uint256){
-    //     return;
-    // }
+    
 }

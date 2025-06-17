@@ -34,12 +34,16 @@ contract Vault {
     }
 
     //Allows users to redeem their rebase tokens for ETH
-    function redeem(uint256 _amount) external{
+    function redeem(uint256 _amount) external {
+        if (_amount == type(uint256).max) {
+            //dust check
+            _amount = i_rebaseToken.balanceOf(msg.sender);
+        }
         //burn tokens from the user
         i_rebaseToken.burn(msg.sender, _amount);
         //send the user ETH
-        (bool success,) =  payable(msg.sender).call{value: _amount}("");
-        if(!success){
+        (bool success,) = payable(msg.sender).call{value: _amount}("");
+        if (!success) {
             revert Vault__RedeemFailed();
         }
         emit Redeem(msg.sender, _amount);
