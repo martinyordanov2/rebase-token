@@ -67,7 +67,7 @@ contract RebaseTokenTest is Test {
         vm.deal(address(vault), transferAmount);
 
         vm.startPrank(address(vault)); // Vault is the only one that can mint
-        rebaseToken.mint(address(mockFailedRedeem), transferAmount);
+        rebaseToken.mint(address(mockFailedRedeem), transferAmount, rebaseToken.getInterestRate());
         vm.stopPrank();
 
         vm.expectRevert(Vault.Vault__RedeemFailed.selector);
@@ -146,7 +146,7 @@ contract RebaseTokenTest is Test {
 
         // Mint tokens to the sender
         vm.startPrank(address(vault));
-        rebaseToken.mint(user, initialAmount);
+        rebaseToken.mint(user, initialAmount, rebaseToken.getInterestRate());
         vm.stopPrank();
 
         // Check balance before
@@ -183,7 +183,7 @@ contract RebaseTokenTest is Test {
     function testTransferFromMaxAmountShouldSendFullBalance() public {
         // Mint tokens to the sender
         vm.startPrank(address(vault));
-        rebaseToken.mint(user, transferAmount);
+        rebaseToken.mint(user, transferAmount, rebaseToken.getInterestRate());
         vm.stopPrank();
 
         vm.prank(user);
@@ -209,13 +209,13 @@ contract RebaseTokenTest is Test {
     function testMintFailsIfCalledByUnauthorizedRole() public {
         vm.startPrank(user);
         vm.expectPartialRevert(bytes4(IAccessControl.AccessControlUnauthorizedAccount.selector));
-        rebaseToken.mint(user, transferAmount);
+        rebaseToken.mint(user, transferAmount, rebaseToken.getInterestRate());
         vm.stopPrank();
     }
 
     function testMintCanBeCalledByAuthorizedRole() public {
         vm.startPrank(address(vault));
-        rebaseToken.mint(user, transferAmount);
+        rebaseToken.mint(user, transferAmount, rebaseToken.getInterestRate());
 
         uint256 userBalance = rebaseToken.balanceOf(user);
         assertEq(userBalance, transferAmount);
@@ -232,7 +232,7 @@ contract RebaseTokenTest is Test {
 
     function testBurnCanBeCalledByAuthorizedRole() public {
         vm.startPrank(address(vault));
-        rebaseToken.mint(user, transferAmount);
+        rebaseToken.mint(user, transferAmount, rebaseToken.getInterestRate());
 
         rebaseToken.burn(user, transferAmount);
         uint256 userBalance = rebaseToken.balanceOf(user);
@@ -243,7 +243,7 @@ contract RebaseTokenTest is Test {
     function testBurnMaximumAmount() public {
         // Mint tokens to the sender
         vm.startPrank(address(vault));
-        rebaseToken.mint(user, transferAmount);
+        rebaseToken.mint(user, transferAmount, rebaseToken.getInterestRate());
 
         // Check balance before
         uint256 balanceBefore = rebaseToken.balanceOf(user);

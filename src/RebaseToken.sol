@@ -72,9 +72,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         return super.transferFrom(_sender, _recipient, _amount);
     }
 
-    function mint(address _to, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
+    function mint(address _to, uint256 _amount, uint256 _userInterestRate) external onlyRole(MINT_AND_BURN_ROLE) {
         _mintAccruedInterest(_to); // check if any interest is needed to be minted at the moment and we also AND set the last time we minted interest to them
-        s_usersInterestRate[_to] = s_interestRate; //set the interest rate when a user mints
+        s_usersInterestRate[_to] = _userInterestRate; //set the interest rate when a user mints
         _mint(_to, _amount);
     }
 
